@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOPE 호프 | 실시간 박스오피스 대시보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root{
+    --bg:#F4F6FB;
+    --card:#FFFFFF;
+    --blue:#2952E3;
+    --blue-dark:#1E3FB8;
+    --purple:#8B5CF6;
+    --green:#22C55E;
+    --red:#EF4444;
+    --text-main:#1A1F36;
+    --text-sub:#6B7280;
+    --border:#E5E9F5;
+    --radius:16px;
+    --shadow:0 4px 24px rgba(41,82,227,0.07);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Pretendard','Noto Sans KR',sans-serif;
+    background:var(--bg);
+    color:var(--text-main);
+    word-break:keep-all;
+    overflow-wrap:break-word;
+  }
+  a{color:inherit;}
+  .app{display:block;min-height:100vh;}
+
+  .main{margin:0 auto;padding:28px 32px 60px;max-width:1440px;}
+
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:16px;
+  }
+  .brand-title{
+    color:var(--blue);font-weight:800;font-size:14px;letter-spacing:1.5px;
+    margin:0;text-transform:uppercase;
+  }
+  .atu-logo{height:56px;width:auto;object-fit:contain;flex-shrink:0;}
+
+  /* 배너 */
+  .banner{
+    background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;
+    padding:14px 20px;border-radius:12px;margin-bottom:20px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    font-size:14px;
+  }
+  .banner.error{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B;}
+  .banner a.btn{
+    background:var(--blue);color:#fff;padding:8px 16px;border-radius:8px;
+    text-decoration:none;font-weight:600;font-size:13px;white-space:nowrap;
+  }
+  .badge-offline{
+    display:inline-flex;align-items:center;gap:6px;background:#F3F4F6;color:#374151;
+    border:1px solid #D1D5DB;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;
+  }
+
+  /* 헤더 */
+  .header-card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:24px 28px;margin-bottom:20px;
+    display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
+  }
+  .header-left{display:flex;gap:18px;align-items:center;}
+  .poster-img{
+    width:64px;height:88px;border-radius:10px;object-fit:cover;
+    box-shadow:0 2px 10px rgba(26,31,54,0.18);
+    flex-shrink:0;
+  }
+  .poster-placeholder{
+    width:64px;height:88px;border-radius:10px;
+    background:linear-gradient(135deg,var(--blue),var(--purple));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:22px;
+    flex-shrink:0;
+  }
+  .header-left h1{margin:0;font-size:24px;font-weight:800;}
+  .header-left p{margin:4px 0 0;color:var(--text-sub);font-size:13px;}
+  .header-right{text-align:right;}
+  .header-right .open-date{color:var(--text-sub);font-size:13px;}
+  .header-right .dday{
+    font-size:22px;font-weight:800;color:var(--blue);margin-top:4px;
+  }
+
+  /* 그리드 레이아웃 */
+  .grid{
+    display:grid;grid-template-columns:repeat(12,1fr);gap:20px;
+  }
+  .card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:22px 24px;
+  }
+  .card h3{margin:0 0 14px;font-size:15px;font-weight:700;color:var(--text-main);}
+  .card .sub-note{color:var(--text-sub);font-size:12px;margin-top:8px;}
+
+  .col-calendar{grid-column:span 4;}
+  .col-kpi{grid-column:span 8;}
+  .col-chart{grid-column:span 6;}
+  .col-manual{grid-column:span 4;}
+  .col-manual-wide{grid-column:span 8;}
+  .col-full{grid-column:span 12;}
+
+  @media (max-width:1100px){
+    .col-calendar,.col-kpi,.col-chart,.col-manual,.col-manual-wide,.col-full{grid-column:span 12;}
+  }
+  @media (max-width:760px){
+    .main{padding:20px 14px 40px;}
+  }
+
+  /* 캘린더 */
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .cal-header button{
+    border:none;background:var(--bg);width:30px;height:30px;border-radius:8px;cursor:pointer;
+    font-size:14px;color:var(--blue);font-weight:700;
+  }
+  .cal-header span{font-weight:700;font-size:14px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;}
+  .cal-grid .dow{font-size:11px;color:var(--text-sub);font-weight:700;padding:4px 0;}
+  .cal-day{
+    position:relative;padding:8px 0;border-radius:8px;font-size:13px;cursor:pointer;
+    color:var(--text-main);
+  }
+  .cal-day:hover:not(.disabled){background:var(--bg);}
+  .cal-day.disabled{color:#D1D5DB;cursor:not-allowed;}
+  .cal-day.empty{cursor:default;}
+  .cal-day.selected{background:var(--blue);color:#fff;font-weight:700;}
+  .cal-day .dot{
+    position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+    width:4px;height:4px;border-radius:50%;background:var(--green);
+  }
+  .cal-day.selected .dot{background:#fff;}
+
+  /* KPI */
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+  .kpi-main-audience,.kpi-main-sales{grid-column:span 2;}
+  @media (max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);} .kpi-main-audience,.kpi-main-sales{grid-column:span 2;}}
+  .kpi-label{color:var(--text-sub);font-size:13px;font-weight:600;margin-bottom:6px;}
+  .kpi-value{font-size:22px;font-weight:800;}
+  .kpi-value.huge{font-size:48px;}
+  .kpi-value.huge-sales{font-size:38px;}
+  .kpi-sub{font-size:13px;color:var(--text-sub);margin-top:4px;}
+  .change-up{color:var(--green);font-weight:700;}
+  .change-down{color:var(--red);font-weight:700;}
+
+  /* 뉴스 */
+  .news-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
+  .news-list li a{
+    display:block;text-decoration:none;color:var(--text-main);
+    padding:12px;border-radius:10px;background:var(--bg);
+  }
+  .news-list li a:hover{background:#E9EDFB;}
+  .news-list .news-title{font-size:14px;font-weight:700;line-height:1.4;}
+  .news-list .news-meta{font-size:12px;color:var(--text-sub);margin-top:6px;}
+
+  /* 평점 */
+  .rating-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+  .rating-row:last-child{border-bottom:none;}
+  .rating-name{font-size:13px;color:var(--text-sub);font-weight:600;}
+  .rating-value{font-size:16px;font-weight:800;color:var(--blue);}
+  .rating-pending{color:#D1D5DB;font-weight:600;font-size:13px;}
+
+  /* 매출 점유율 */
+  .share-current{font-size:38px;font-weight:800;color:var(--blue);margin:6px 0 12px;}
+
+  /* BEP */
+  .bep-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px;}
+  .bep-header h3{margin:0;}
+  .bep-pct-big{font-size:22px;font-weight:800;color:var(--blue);}
+  .bep-track{background:var(--bg);border-radius:20px;height:20px;overflow:hidden;position:relative;margin:14px 0 8px;}
+  .bep-fill{
+    height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));
+    border-radius:20px;transition:width .6s ease;
+  }
+  .bep-pct-label{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.25);}
+
+  .updated-note{color:var(--text-sub);font-size:11px;margin-top:14px;text-align:right;}
+
+  .loading-progress{
+    font-size:12px;color:var(--text-sub);margin-top:8px;
+  }
+  .loading-bar{background:var(--bg);border-radius:20px;height:6px;overflow:hidden;margin-top:6px;}
+  .loading-bar-fill{height:100%;background:var(--blue);border-radius:20px;transition:width .2s;}
+
+  canvas{max-width:100%;}
+
+  /* 비밀번호 게이트 */
+  .lock-overlay{
+    position:fixed;inset:0;background:var(--bg);z-index:9999;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .lock-card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:40px 36px;width:320px;max-width:90vw;text-align:center;
+  }
+  .lock-card .logo-mark{
+    width:52px;height:52px;border-radius:14px;margin:0 auto 16px;
+    background:linear-gradient(135deg,var(--blue),var(--purple));
+    color:#fff;font-weight:800;font-size:24px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .lock-card h2{margin:0 0 6px;font-size:18px;font-weight:800;color:var(--text-main);}
+  .lock-card p{margin:0 0 18px;color:var(--text-sub);font-size:13px;}
+  .lock-card input{
+    width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);
+    font-size:20px;text-align:center;letter-spacing:6px;box-sizing:border-box;
+    outline:none;
+  }
+  .lock-card input:focus{border-color:var(--blue);}
+  .lock-card button{
+    width:100%;margin-top:12px;padding:12px 14px;border:none;border-radius:10px;
+    background:var(--blue);color:#fff;font-weight:700;font-size:14px;cursor:pointer;
+  }
+  .lock-card button:hover{background:var(--blue-dark);}
+  .lock-error{color:var(--red);font-size:13px;margin-top:10px;min-height:16px;}
+</style>
+</head>
+<body>
+
+<div class="lock-overlay" id="lock-overlay">
+  <div class="lock-card">
+    <div class="logo-mark">H</div>
+    <h2>HOPE DASHBOARD</h2>
+    <p>비밀번호를 입력하세요</p>
+    <form id="lock-form" autocomplete="off">
+      <input type="password" id="lock-input" inputmode="numeric" maxlength="4" placeholder="••••" autofocus>
+      <button type="submit">입장</button>
+    </form>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <main class="main" id="dashboard-top">
+    <div class="topbar">
+      <h2 class="brand-title">HOPE DASHBOARD</h2>
+      <img class="atu-logo" src="atu-logo.jpg" alt="ATU Partners">
+    </div>
+
+    <div id="banner-area"></div>
+
+    <section class="header-card">
+      <div class="header-left">
+        <img class="poster-img" src="https://upload.wikimedia.org/wikipedia/en/0/03/Hope_%282026_film%29_poster.png"
+             alt="호프(HOPE) 포스터"
+             onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'poster-placeholder',textContent:'H'}));">
+        <div>
+          <h1>HOPE 호프</h1>
+          <p id="header-subtitle">나홍진 감독 | 플러스엠 엔터테인먼트 | ATU Partners 투자작</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="open-date" id="open-date-label">개봉일 2026.07.15</div>
+        <div class="dday" id="dday-label">-</div>
+      </div>
+    </section>
+
+    <div class="grid">
+
+      <div class="card col-calendar">
+        <h3>날짜 선택</h3>
+        <div class="cal-header">
+          <button id="cal-prev">‹</button>
+          <span id="cal-month-label"></span>
+          <button id="cal-next">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="loading-progress" id="loading-progress" style="display:none;">
+          데이터 수집 중...
+          <div class="loading-bar"><div class="loading-bar-fill" id="loading-bar-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="card col-kpi">
+        <h3>박스오피스 KPI <span id="selected-date-note" style="font-weight:400;color:var(--text-sub);font-size:12px;"></span></h3>
+        <div class="kpi-grid">
+          <div class="kpi-main-audience">
+            <div class="kpi-label">누적 관객수</div>
+            <div class="kpi-value huge" id="kpi-audiAcc">-</div>
+          </div>
+          <div class="kpi-main-sales">
+            <div class="kpi-label">누적 매출액</div>
+            <div class="kpi-value huge-sales" id="kpi-salesAcc-huge">-</div>
+            <div class="kpi-sub" id="kpi-salesAcc-detail">-</div>
+          </div>
+          <div>
+            <div class="kpi-label">당일 관객수</div>
+            <div class="kpi-value" id="kpi-audiCnt">-</div>
+            <div class="kpi-sub" id="kpi-audiChange">-</div>
+          </div>
+          <div>
+            <div class="kpi-label">당일 순위</div>
+            <div class="kpi-value" id="kpi-rank">-</div>
+          </div>
+          <div>
+            <div class="kpi-label">스크린 수</div>
+            <div class="kpi-value" id="kpi-scrnCnt">-</div>
+          </div>
+          <div>
+            <div class="kpi-label">상영횟수</div>
+            <div class="kpi-value" id="kpi-showCnt">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card col-chart" id="chart-section">
+        <h3>일별/누적 관객수 추이</h3>
+        <canvas id="chart-audience" height="220"></canvas>
+      </div>
+
+      <div class="card col-chart">
+        <h3>일별 매출액 추이</h3>
+        <canvas id="chart-sales" height="220"></canvas>
+      </div>
+
+      <div class="card col-manual">
+        <h3>종합 평점</h3>
+        <div id="ratings-body"></div>
+        <div class="updated-note" id="ratings-updated"></div>
+      </div>
+
+      <div class="card col-manual">
+        <h3>박스오피스 매출 점유율</h3>
+        <div class="kpi-label">선택일 기준 (KOBIS 실데이터)</div>
+        <div class="share-current" id="share-current">-</div>
+        <canvas id="chart-share" height="120"></canvas>
+      </div>
+
+      <div class="card col-manual">
+        <h3>상영 효율 지표</h3>
+        <div class="kpi-label">선택일 기준 (KOBIS 실데이터로 자동 계산)</div>
+        <div class="rating-row">
+          <span class="rating-name">회당 평균 관객수</span>
+          <span class="rating-value" id="avg-audi-per-show">-</span>
+        </div>
+        <div class="rating-row">
+          <span class="rating-name">스크린당 일 상영횟수</span>
+          <span class="rating-value" id="avg-show-per-screen">-</span>
+        </div>
+      </div>
+
+      <div class="card col-manual-wide" id="news-card">
+        <h3>핵심 기사</h3>
+        <ul class="news-list" id="news-list"></ul>
+        <div class="updated-note" id="news-updated"></div>
+      </div>
+
+      <div class="card col-full" id="config-note">
+        <div class="bep-header">
+          <h3>ATU 투자자 뷰 — 손익분기점(BEP) 트래커</h3>
+          <div class="bep-pct-big" id="bep-pct-big">달성률 0%</div>
+        </div>
+        <div class="bep-track">
+          <div class="bep-fill" id="bep-fill" style="width:0%"></div>
+          <div class="bep-pct-label" id="bep-pct-label">0%</div>
+        </div>
+        <div class="kpi-sub" id="bep-detail">-</div>
+        <div class="kpi-sub" id="bep-eta">참고용 추정치 — 최근 7일 평균 일일 관객수 기준</div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   CONFIG — 하드코딩 상수 (movieCd는 런타임 자동 탐색)
+   ========================================================= */
+const CONFIG = {
+  // 비워두면 서버(로컬 server.js 또는 배포된 Vercel Function)가 환경변수로 보유한 키를 사용한다.
+  // file://로 완전 독립 실행하고 싶을 때만 개인 키를 여기 붙여넣으면 브라우저에서 직접 KOBIS를 호출한다.
+  KOBIS_API_KEY: "",
+  KOBIS_SIGNUP_URL: "https://www.kobis.or.kr/kobisopenapi",
+  KOBIS_BASE_URL: "http://kobis.or.kr/kobisopenapi/webservice/rest",
+  KOBIS_PROXY_BASE: "/api/kobis",
+  MOVIE_NAME: "호프",
+  MOVIE_NAME_EN: "HOPE",
+  DIRECTOR_NAME: "나홍진",
+  DISTRIBUTOR: "플러스엠 엔터테인먼트",
+  OPEN_DATE: "2026-07-15",
+  US_RELEASE_DATE: "2026-09-09",
+  US_DISTRIBUTOR: "NEON",
+  VERIFY_OPEN_DAY_AUDI_CNT: 333900, // 검증용 참고치 — KOBIS 라이브 데이터 기준(2026-07-19 확인, 지시서 참고치 333,899에서 1명 차이)
+  BEP_AUDIENCE: 7000000, // 손익분기점 추정 관객수 (총제작비 약 530억 기준 추정치, 수정 가능)
+  REQUEST_DELAY_MS: 100,
+};
+
+/* =========================================================
+   MANUAL_DATA — KOBIS 오픈 API 미제공 항목 (수동 입력)
+   출처는 각 값 옆 주석 참고. 웹 검색(2026-07-19 조사 시점) 결과를 바탕으로 채움.
+   실시간으로 계속 변동되는 값이므로 주기적 갱신 필요.
+   ========================================================= */
+const MANUAL_DATA = {
+  updatedAt: "2026-07-19",
+  ratings: {
+    cgv: 81,        // CGV 골든에그 지수 81% (개봉 직후 89%에서 하락 추세)
+                     // 출처: https://bbs.ruliweb.com/community/board/300013/read/3776319 , https://v.daum.net/v/68PJbP4qhC
+    naver: 7.12,     // 네이버 실관람객 평점 (10점 만점, 네티즌 평점은 별도 5.96점)
+                     // 출처: https://v.daum.net/v/68PJbP4qhC , https://www.mt.co.kr/entertainment/2026/07/17/2026071710547239716
+    watcha: 2.8      // 왓챠피디아 평점 (5점 만점, 평가자 약 114명 기준 — 조사 시점 스냅샷)
+                     // 출처: https://pedia.watcha.com/ko/contents/mWJXDo3
+  },
+  // 실시간 예매율은 공식 API가 없어 스크래핑도 불안정 — "상영 효율 지표" 카드(KOBIS 실데이터 계산)로 대체했다.
+  // 뉴스는 이제 네이버 뉴스 검색 오픈API로, 네이버 평점은 네이버 검색 페이지 스크래핑으로 매번 열 때마다 실시간 조회한다.
+  // 아래 newsFallback은 서버에 NAVER_CONFIG 키가 없거나 API 호출 실패 시에만 쓰이는 백업 데이터.
+  newsFallback: [
+    // 출처: https://enews.imbc.com/News/RetrieveNewsInfo/511733
+    { title: "나홍진 '호프', 개봉 첫날 33만 돌파…올해 최고 오프닝 스코어", press: "MBC뉴스", date: "2026-07-16", url: "https://enews.imbc.com/News/RetrieveNewsInfo/511733" },
+    // 출처: https://www.fnnews.com/news/202607180820335167
+    { title: "나홍진 신작 '호프', 개봉 3일 120만 돌파..올해 최고 흥행 속도", press: "파이낸셜뉴스", date: "2026-07-18", url: "https://www.fnnews.com/news/202607180820335167" },
+    // 출처: https://www.econovill.com/news/articleView.html?idxno=745545
+    { title: "속도 내는 '호프', 누적 173만명…관객점유율 65.4%→66.7%", press: "이코노믹뷰", date: "2026-07-18", url: "https://www.econovill.com/news/articleView.html?idxno=745545" },
+    // 출처: https://news.nate.com/view/20260719n03417
+    { title: "'호프', 土 51만명 봤다…오늘(19일) 200만 돌파 확실시", press: "네이트뉴스", date: "2026-07-19", url: "https://news.nate.com/view/20260719n03417" }
+  ]
+};
+
+/* =========================================================
+   상태 & 유틸
+   ========================================================= */
+const state = {
+  movieCd: null,
+  selectedDate: null,   // YYYY-MM-DD
+  dailyData: {},        // { 'YYYY-MM-DD': { date, record } }
+  calendarViewYear: null,
+  calendarViewMonth: null, // 0-11
+  offline: false,
+  charts: {},
+};
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function toYmdDash(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function toYmdCompact(dashStr){ return dashStr.replace(/-/g,''); }
+function parseDash(dashStr){
+  const [y,m,d] = dashStr.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function addDays(dashStr, n){
+  const d = parseDash(dashStr);
+  d.setDate(d.getDate()+n);
+  return toYmdDash(d);
+}
+function diffDays(aDash, bDash){
+  const a = parseDash(aDash), b = parseDash(bDash);
+  return Math.round((b-a)/86400000);
+}
+function fmtComma(n){
+  if (n===null || n===undefined || isNaN(n)) return '-';
+  return Number(n).toLocaleString('ko-KR');
+}
+function fmtEok(won){
+  if (won===null || won===undefined || isNaN(won)) return '-';
+  return (Number(won)/100000000).toLocaleString('ko-KR', {maximumFractionDigits:1, minimumFractionDigits:1}) + '억 원';
+}
+function yesterday(){
+  const d = new Date();
+  d.setDate(d.getDate()-1);
+  return toYmdDash(d);
+}
+function todayDash(){
+  return toYmdDash(new Date());
+}
+
+/* 숫자 카운트업 애니메이션 (0.6초) */
+function animateCount(el, target){
+  const isText = typeof target === 'string';
+  if (isText){ el.textContent = target; return; }
+  const start = 0;
+  const duration = 600;
+  const startTime = performance.now();
+  function tick(now){
+    const p = Math.min(1, (now-startTime)/duration);
+    const eased = 1 - Math.pow(1-p, 3);
+    const val = Math.round(start + (target-start)*eased);
+    el.textContent = fmtComma(val);
+    if (p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* =========================================================
+   배너 (API 키 안내 / 에러 / 오프라인)
+   ========================================================= */
+function showBanner(html, type){
+  const area = document.getElementById('banner-area');
+  const div = document.createElement('div');
+  div.className = 'banner' + (type==='error' ? ' error' : '');
+  div.innerHTML = html;
+  area.appendChild(div);
+}
+function clearBanners(){
+  document.getElementById('banner-area').innerHTML = '';
+}
+function showOfflineBadge(){
+  const area = document.getElementById('banner-area');
+  const span = document.createElement('span');
+  span.className = 'badge-offline';
+  span.textContent = '⚠ 오프라인 데이터 (캐시)';
+  area.appendChild(span);
+}
+
+/* =========================================================
+   KOBIS API 호출
+   개인 키가 CONFIG에 있으면 브라우저에서 직접 KOBIS를 먼저 시도(완전 독립 실행용),
+   없거나 실패하면 서버 프록시(/api/kobis)로 폴백 — 프록시가 서버 환경변수의 키를 사용한다.
+   ========================================================= */
+async function kobisFetch(endpoint, params){
+  if (CONFIG.KOBIS_API_KEY){
+    try {
+      const directQs = new URLSearchParams({ ...params, key: CONFIG.KOBIS_API_KEY }).toString();
+      const res = await fetch(`${CONFIG.KOBIS_BASE_URL}/${endpoint}?${directQs}`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      if (json.faultInfo) throw new Error(json.faultInfo.message || 'KOBIS API 오류');
+      return json;
+    } catch (directErr) {
+      // 폴백으로 진행
+    }
+  }
+
+  const proxyQs = new URLSearchParams({ endpoint, ...params }).toString();
+  const res2 = await fetch(`${CONFIG.KOBIS_PROXY_BASE}?${proxyQs}`);
+  if (!res2.ok) throw new Error('HTTP ' + res2.status);
+  const json2 = await res2.json();
+  if (json2.error) throw new Error(json2.message || 'KOBIS 프록시 오류');
+  if (json2.faultInfo) throw new Error(json2.faultInfo.message || 'KOBIS API 오류');
+  return json2;
+}
+
+async function resolveMovieCd(){
+  const cacheKey = 'hope_movieCd';
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) return cached;
+
+  const data = await kobisFetch('movie/searchMovieList.json', {
+    movieNm: CONFIG.MOVIE_NAME,
+    openStartDt: '2026',
+    openEndDt: '2026',
+  });
+  const list = (data.movieListResult && data.movieListResult.movieList) || [];
+  const match = list.find(m => (m.directors||[]).some(d => d.peopleNm === CONFIG.DIRECTOR_NAME))
+             || list.find(m => m.movieNm === CONFIG.MOVIE_NAME)
+             || list[0];
+  if (!match) throw new Error('KOBIS 영화목록에서 호프(HOPE)를 찾을 수 없습니다.');
+  localStorage.setItem(cacheKey, match.movieCd);
+  return match.movieCd;
+}
+
+async function getDailyBoxOffice(dashDate){
+  const cacheKey = 'hope_daily_' + toYmdCompact(dashDate);
+  const cached = localStorage.getItem(cacheKey);
+  if (cached){
+    try { return JSON.parse(cached); } catch(e){ /* fallthrough */ }
+  }
+  const targetDt = toYmdCompact(dashDate);
+  const data = await kobisFetch('boxoffice/searchDailyBoxOfficeList.json', { targetDt });
+  const list = (data.boxOfficeResult && data.boxOfficeResult.dailyBoxOfficeList) || [];
+  const record = list.find(m => m.movieCd === state.movieCd) || null; // 10위권 밖 등 결측 가능
+  const result = { date: dashDate, record };
+  localStorage.setItem(cacheKey, JSON.stringify(result));
+  return result;
+}
+
+function delay(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/* 개봉일 ~ untilDate 까지 순차 수집 (캐시 우선, 100ms 딜레이, 진행률 표시) */
+async function collectDailyRange(untilDate){
+  const dates = [];
+  let cur = CONFIG.OPEN_DATE;
+  while (diffDays(cur, untilDate) >= 0){
+    dates.push(cur);
+    cur = addDays(cur, 1);
+  }
+
+  const progressEl = document.getElementById('loading-progress');
+  const barEl = document.getElementById('loading-bar-fill');
+  progressEl.style.display = 'block';
+
+  let offlineHit = false;
+  for (let i=0;i<dates.length;i++){
+    const d = dates[i];
+    const cacheKey = 'hope_daily_' + toYmdCompact(d);
+    const alreadyCached = !!localStorage.getItem(cacheKey);
+    try {
+      const result = await getDailyBoxOffice(d);
+      state.dailyData[d] = result;
+      if (!alreadyCached) await delay(CONFIG.REQUEST_DELAY_MS);
+    } catch (err){
+      // 네트워크 실패 → 캐시 폴백 (이미 getDailyBoxOffice에서 캐시 우선 조회했으므로 여기 도달 시 캐시도 없음)
+      offlineHit = true;
+      state.dailyData[d] = { date: d, record: null, failed: true };
+    }
+    barEl.style.width = Math.round(((i+1)/dates.length)*100) + '%';
+  }
+  progressEl.style.display = 'none';
+  if (offlineHit) state.offline = true;
+}
+
+/* =========================================================
+   캘린더 위젯
+   ========================================================= */
+function isSelectable(dashDate){
+  const min = CONFIG.OPEN_DATE;
+  const max = yesterday();
+  return diffDays(min, dashDate) >= 0 && diffDays(dashDate, max) >= 0;
+}
+
+function renderCalendar(){
+  const y = state.calendarViewYear, m = state.calendarViewMonth;
+  document.getElementById('cal-month-label').textContent = `${y}. ${pad2(m+1)}`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  ['일','월','화','수','목','금','토'].forEach(dow=>{
+    const el = document.createElement('div');
+    el.className = 'dow';
+    el.textContent = dow;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(y, m, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+
+  for (let i=0;i<startOffset;i++){
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+
+  for (let d=1; d<=daysInMonth; d++){
+    const dash = `${y}-${pad2(m+1)}-${pad2(d)}`;
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    el.textContent = d;
+
+    const selectable = isSelectable(dash);
+    if (!selectable) el.classList.add('disabled');
+    if (dash === state.selectedDate) el.classList.add('selected');
+
+    const hasData = !!localStorage.getItem('hope_daily_' + toYmdCompact(dash));
+    if (hasData){
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      el.appendChild(dot);
+    }
+
+    if (selectable){
+      el.addEventListener('click', () => onDateSelected(dash));
+    }
+    grid.appendChild(el);
+  }
+}
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  state.calendarViewMonth--;
+  if (state.calendarViewMonth < 0){ state.calendarViewMonth = 11; state.calendarViewYear--; }
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  state.calendarViewMonth++;
+  if (state.calendarViewMonth > 11){ state.calendarViewMonth = 0; state.calendarViewYear++; }
+  renderCalendar();
+});
+
+async function onDateSelected(dash){
+  state.selectedDate = dash;
+  renderCalendar();
+  await collectDailyRange(dash);
+  renderAll();
+}
+
+/* =========================================================
+   헤더 (D+N 카운터)
+   ========================================================= */
+function renderHeader(){
+  const dLabel = document.getElementById('open-date-label');
+  dLabel.textContent = `개봉일 ${CONFIG.OPEN_DATE.replace(/-/g,'.')}`;
+
+  const dday = diffDays(CONFIG.OPEN_DATE, state.selectedDate) + 1; // 개봉일 = 개봉 1일차
+  document.getElementById('dday-label').textContent = `개봉 ${dday}일차 (D+${dday})`;
+}
+
+/* =========================================================
+   KPI 렌더링
+   ========================================================= */
+function renderKpi(){
+  const cur = state.dailyData[state.selectedDate];
+  const rec = cur && cur.record;
+
+  document.getElementById('selected-date-note').textContent = `(${state.selectedDate} 기준)`;
+
+  if (!rec){
+    document.getElementById('kpi-audiAcc').textContent = '데이터 없음';
+    document.getElementById('kpi-salesAcc-huge').textContent = '-';
+    document.getElementById('kpi-salesAcc-detail').textContent = '박스오피스 10위권 밖 등의 사유로 결측';
+    document.getElementById('kpi-audiCnt').textContent = '-';
+    document.getElementById('kpi-audiChange').textContent = '-';
+    document.getElementById('kpi-rank').textContent = '-';
+    document.getElementById('kpi-scrnCnt').textContent = '-';
+    document.getElementById('kpi-showCnt').textContent = '-';
+    return;
+  }
+
+  animateCount(document.getElementById('kpi-audiAcc'), Number(rec.audiAcc));
+  document.getElementById('kpi-salesAcc-huge').textContent = fmtEok(rec.salesAcc);
+  document.getElementById('kpi-salesAcc-detail').textContent = `${fmtComma(rec.salesAcc)}원`;
+
+  animateCount(document.getElementById('kpi-audiCnt'), Number(rec.audiCnt));
+
+  const prevDash = addDays(state.selectedDate, -1);
+  const prev = state.dailyData[prevDash];
+  const prevAudi = prev && prev.record ? Number(prev.record.audiCnt) : null;
+  const changeEl = document.getElementById('kpi-audiChange');
+  if (prevAudi){
+    const rate = ((Number(rec.audiCnt) - prevAudi) / prevAudi) * 100;
+    changeEl.textContent = (rate>=0?'▲ ':'▼ ') + Math.abs(rate).toFixed(1) + '% (전일 대비)';
+    changeEl.className = 'kpi-sub ' + (rate>=0 ? 'change-up' : 'change-down');
+  } else {
+    changeEl.textContent = '전일 데이터 없음';
+    changeEl.className = 'kpi-sub';
+  }
+
+  document.getElementById('kpi-rank').textContent = rec.rank || '-';
+  document.getElementById('kpi-scrnCnt').textContent = fmtComma(rec.scrnCnt);
+  document.getElementById('kpi-showCnt').textContent = fmtComma(rec.showCnt);
+}
+
+/* =========================================================
+   차트 (Chart.js)
+   ========================================================= */
+function buildSeries(){
+  const labels = [];
+  const audiCnt = [];
+  const audiAcc = [];
+  const sales = [];
+  const salesShare = [];
+  let cur = CONFIG.OPEN_DATE;
+  while (diffDays(cur, state.selectedDate) >= 0){
+    labels.push(cur.slice(5));
+    const d = state.dailyData[cur];
+    const rec = d && d.record;
+    audiCnt.push(rec ? Number(rec.audiCnt) : null);
+    audiAcc.push(rec ? Number(rec.audiAcc) : null);
+    sales.push(rec ? Number(rec.salesAmt) : null);
+    salesShare.push(rec && rec.salesShare!==undefined ? Number(rec.salesShare) : null);
+    cur = addDays(cur, 1);
+  }
+  return { labels, audiCnt, audiAcc, sales, salesShare };
+}
+
+if (window.ChartDataLabels) Chart.register(window.ChartDataLabels);
+
+function fmtEokShort(won){
+  if (won===null || won===undefined || isNaN(won)) return '';
+  return (Number(won)/100000000).toLocaleString('ko-KR', {maximumFractionDigits:1, minimumFractionDigits:1}) + '억';
+}
+
+function maxOf(arr){
+  const valid = arr.filter(v => v!==null && v!==undefined);
+  return valid.length ? Math.max(...valid) : 0;
+}
+
+function renderCharts(){
+  const { labels, audiCnt, audiAcc, sales } = buildSeries();
+
+  if (state.charts.audience) state.charts.audience.destroy();
+  const ctx1 = document.getElementById('chart-audience').getContext('2d');
+  state.charts.audience = new Chart(ctx1, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type:'bar', label:'일별 관객수', data: audiCnt, backgroundColor:'#2952E3', yAxisID:'y', borderRadius:4,
+          datalabels:{ display:true, anchor:'end', align:'top', color:'#1A1F36', font:{ size:10, weight:'bold' }, formatter:(v)=> v===null ? '' : fmtComma(v) }
+        },
+        {
+          type:'line', label:'누적 관객수', data: audiAcc, borderColor:'#8B5CF6', backgroundColor:'#8B5CF6', yAxisID:'y1', tension:0.3, spanGaps:true,
+          datalabels:{ display:false }
+        },
+      ]
+    },
+    options: {
+      responsive:true,
+      layout:{ padding:{ top:36 } },
+      interaction:{ mode:'index', intersect:false },
+      scales:{
+        y:{ position:'left', suggestedMax: maxOf(audiCnt)*1.2, title:{display:true, text:'일별 관객수'} },
+        y1:{ position:'right', title:{display:true, text:'누적 관객수'}, grid:{ drawOnChartArea:false } },
+      },
+      plugins:{ datalabels:{ display:false } }
+    }
+  });
+
+  if (state.charts.sales) state.charts.sales.destroy();
+  const ctx2 = document.getElementById('chart-sales').getContext('2d');
+  state.charts.sales = new Chart(ctx2, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'일별 매출액(원)', data: sales, borderColor:'#2952E3', backgroundColor:'rgba(41,82,227,0.15)', fill:true, tension:0.3, spanGaps:true,
+          datalabels:{ display:true, anchor:'end', align:'top', color:'#1A1F36', font:{ size:10, weight:'bold' }, formatter:(v)=> fmtEokShort(v) }
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      layout:{ padding:{ top:36 } },
+      scales:{ y:{ suggestedMax: maxOf(sales)*1.2, ticks:{ callback:(v)=>fmtEok(v) } } },
+      plugins:{ datalabels:{ display:true } }
+    }
+  });
+}
+
+function renderShare(){
+  const { labels, salesShare } = buildSeries();
+  const lastVal = [...salesShare].reverse().find(v => v!==null && v!==undefined);
+  document.getElementById('share-current').textContent = (lastVal!==undefined && lastVal!==null) ? lastVal.toFixed(1) + '%' : '-';
+
+  if (state.charts.share) state.charts.share.destroy();
+  const ctx = document.getElementById('chart-share').getContext('2d');
+  state.charts.share = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        { label:'매출 점유율(%)', data: salesShare, borderColor:'#22C55E', backgroundColor:'rgba(34,197,94,0.15)', fill:true, tension:0.3, spanGaps:true }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{ display:false }, datalabels:{ display:false } },
+      scales:{ y:{ ticks:{ callback:(v)=>v+'%' } } }
+    }
+  });
+}
+
+/* =========================================================
+   MANUAL_DATA 카드 렌더링
+   ========================================================= */
+function ratingRowHtml(name, val, unit){
+  const display = val!==null && val!==undefined ? val + unit : null;
+  return `
+    <div class="rating-row">
+      <span class="rating-name">${name}</span>
+      <span class="${display ? 'rating-value' : 'rating-pending'}">${display ?? '데이터 입력 대기'}</span>
+    </div>
+  `;
+}
+
+/* 네이버 통합검색 결과 페이지 스크래핑(서버 프록시 경유) — 열 때마다 실시간 조회, 캐시하지 않음 */
+async function fetchLiveNaverRatings(){
+  const res = await fetch(`/api/naver-rating?query=${encodeURIComponent(NAVER_RATING_QUERY)}`);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (data.error) throw new Error(data.message || '네이버 평점 조회 오류');
+  return data; // { audienceRating, netizenRating }
+}
+
+async function renderRatings(){
+  const r = MANUAL_DATA.ratings;
+  const noteEl = document.getElementById('ratings-updated');
+  const body = document.getElementById('ratings-body');
+
+  let naverAudience = r.naver;
+  let naverNetizen = null;
+  let naverLive = false;
+
+  try {
+    const live = await fetchLiveNaverRatings();
+    naverAudience = live.audienceRating;
+    naverNetizen = live.netizenRating;
+    naverLive = true;
+  } catch (err){
+    console.warn('[평점] 네이버 실시간 조회 실패, 수동 데이터로 대체:', err.message);
+  }
+
+  const rows = [
+    ratingRowHtml('CGV 골든에그 지수', r.cgv, '%'),
+    ratingRowHtml('네이버 실관람객', naverAudience, ' / 10'),
+  ];
+  if (naverLive && naverNetizen!==null) rows.push(ratingRowHtml('네이버 네티즌', naverNetizen, ' / 10'));
+  rows.push(ratingRowHtml('왓챠피디아', r.watcha, ' / 5'));
+
+  body.innerHTML = rows.join('');
+  noteEl.textContent = naverLive
+    ? `네이버 평점 실시간 조회: ${new Date().toLocaleString('ko-KR')} · CGV/왓챠 수동 데이터: ${MANUAL_DATA.updatedAt}`
+    : `수동 데이터 업데이트: ${MANUAL_DATA.updatedAt} (네이버 실시간 조회 실패)`;
+}
+
+/* 예매율은 공식 API가 없어, KOBIS 실데이터로 계산 가능한 상영 효율 지표로 대체 */
+function renderScreenEfficiency(){
+  const cur = state.dailyData[state.selectedDate];
+  const rec = cur && cur.record;
+  const audiEl = document.getElementById('avg-audi-per-show');
+  const showEl = document.getElementById('avg-show-per-screen');
+  if (!rec){
+    audiEl.textContent = '-';
+    showEl.textContent = '-';
+    return;
+  }
+  const avgAudiPerShow = Number(rec.audiCnt) / Number(rec.showCnt);
+  const avgShowPerScreen = Number(rec.showCnt) / Number(rec.scrnCnt);
+  audiEl.textContent = avgAudiPerShow.toFixed(1) + '명/회';
+  showEl.textContent = avgShowPerScreen.toFixed(1) + '회/스크린';
+}
+
+const NAVER_NEWS_QUERY = "나홍진 호프 박스오피스";
+// 평점용 쿼리는 뉴스용과 다르게 별도로 검증됨: 단어 순서/구성에 따라 네이버가 평점 위젯을 안 띄우는 경우가 있어
+// "나홍진 호프 영화 평점" 형태로 고정 (예: "박스오피스"가 들어가면 박스오피스 위젯이 우선되어 평점이 안 나옴).
+const NAVER_RATING_QUERY = "나홍진 호프 영화 평점";
+
+function stripNewsHtml(str){
+  return str
+    .replace(/<\/?b>/g, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'");
+}
+function extractPressFromLink(link){
+  try { return new URL(link).hostname.replace(/^www\./, ''); }
+  catch (e){ return '출처 미상'; }
+}
+function fmtNaverPubDate(pubDate){
+  const d = new Date(pubDate);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+
+/* 네이버 뉴스 검색 오픈API(서버 프록시 경유)로 열 때마다 실시간 조회. 캐시하지 않음. */
+async function fetchLiveNews(){
+  const res = await fetch(`/api/naver-news?query=${encodeURIComponent(NAVER_NEWS_QUERY)}&display=4`);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (data.error) throw new Error(data.message || '네이버 뉴스 API 오류');
+  const items = (data.items || []).map(item => ({
+    title: stripNewsHtml(item.title),
+    press: extractPressFromLink(item.originallink || item.link),
+    date: fmtNaverPubDate(item.pubDate),
+    url: item.originallink || item.link,
+  }));
+  if (!items.length) throw new Error('검색 결과 없음');
+  return items;
+}
+
+function renderNewsList(items){
+  const list = document.getElementById('news-list');
+  if (!items.length){
+    list.innerHTML = `<li><a href="#" onclick="return false;">데이터 입력 대기</a></li>`;
+    return;
+  }
+  list.innerHTML = items.map(n => `
+    <li>
+      <a href="${n.url}" target="_blank" rel="noopener noreferrer">
+        <div class="news-title">${n.title}</div>
+        <div class="news-meta">${n.press} · ${n.date}</div>
+      </a>
+    </li>
+  `).join('');
+}
+
+async function renderNews(){
+  const noteEl = document.getElementById('news-updated');
+  try {
+    const items = await fetchLiveNews();
+    renderNewsList(items);
+    noteEl.textContent = `실시간 조회: ${new Date().toLocaleString('ko-KR')} (네이버 뉴스 검색)`;
+  } catch (err){
+    console.warn('[뉴스] 실시간 조회 실패, 수동 데이터로 대체:', err.message);
+    renderNewsList((MANUAL_DATA.newsFallback || []).filter(n => n.title));
+    const reason = location.protocol === 'file:'
+      ? 'index.html을 직접 열면(file://) 실시간 기사를 가져올 수 없습니다 — http://localhost:3000으로 접속하세요'
+      : `실시간 조회 실패 — server.js의 NAVER_CONFIG 키를 확인하세요 (${err.message})`;
+    noteEl.textContent = `수동 데이터 업데이트: ${MANUAL_DATA.updatedAt} (${reason})`;
+  }
+}
+
+/* =========================================================
+   BEP 트래커
+   ========================================================= */
+function renderBep(){
+  const cur = state.dailyData[state.selectedDate];
+  const rec = cur && cur.record;
+  const audiAcc = rec ? Number(rec.audiAcc) : 0;
+  const pct = Math.min(100, (audiAcc / CONFIG.BEP_AUDIENCE) * 100);
+
+  document.getElementById('bep-fill').style.width = pct.toFixed(1) + '%';
+  document.getElementById('bep-pct-label').textContent = pct.toFixed(1) + '%';
+  document.getElementById('bep-pct-big').textContent = `달성률 ${pct.toFixed(1)}%`;
+  document.getElementById('bep-detail').textContent =
+    `누적 ${fmtComma(audiAcc)}명 / BEP 기준 ${fmtComma(CONFIG.BEP_AUDIENCE)}명`;
+
+  // 최근 7일 평균 일일 관객수로 BEP 도달일 추정
+  let sum = 0, cnt = 0, d = state.selectedDate;
+  for (let i=0;i<7;i++){
+    const rec2 = state.dailyData[d] && state.dailyData[d].record;
+    if (rec2){ sum += Number(rec2.audiCnt); cnt++; }
+    d = addDays(d, -1);
+  }
+  const avg = cnt ? sum/cnt : 0;
+  const remain = CONFIG.BEP_AUDIENCE - audiAcc;
+
+  const etaEl = document.getElementById('bep-eta');
+  if (remain <= 0){
+    etaEl.textContent = '참고용 추정치 — 이미 BEP 도달';
+  } else if (avg > 0){
+    const daysNeeded = Math.ceil(remain / avg);
+    const etaDate = addDays(state.selectedDate, daysNeeded);
+    etaEl.textContent = `참고용 추정치 — 최근 7일 평균 일일 ${fmtComma(Math.round(avg))}명 기준 약 ${daysNeeded}일 후 (${etaDate}) BEP 도달 예상`;
+  } else {
+    etaEl.textContent = '참고용 추정치 — 최근 데이터 부족으로 추정 불가';
+  }
+}
+
+/* =========================================================
+   전체 렌더링
+   ========================================================= */
+function renderAll(){
+  renderHeader();
+  renderKpi();
+  renderCharts();
+  renderShare();
+  renderScreenEfficiency();
+  renderBep();
+  renderCalendar();
+  if (state.offline){
+    clearBanners();
+    showOfflineBadge();
+  }
+}
+
+/* =========================================================
+   초기화
+   ========================================================= */
+async function init(){
+  renderRatings(); // 비동기 — 네이버 평점 실시간 조회, 완료를 기다리지 않고 병행 진행
+  renderNews();    // 비동기 — 완료를 기다리지 않고 다른 초기화와 병행 진행
+
+  try {
+    state.movieCd = await resolveMovieCd();
+  } catch (err){
+    // 키 미설정(서버 프록시) / 개인 키 오류 등을 모두 포괄하는 단일 에러 배너.
+    showBanner(`<span>⚠ movieCd 조회 실패: ${err.message} (서버의 KOBIS_API_KEY 설정을 확인하거나, CONFIG.KOBIS_API_KEY에 개인 키를 입력하세요)</span>
+      <a class="btn" href="${CONFIG.KOBIS_SIGNUP_URL}" target="_blank" rel="noopener noreferrer">키 발급받기</a>`, 'error');
+    state.selectedDate = yesterday();
+    const y0 = parseDash(state.selectedDate);
+    state.calendarViewYear = y0.getFullYear();
+    state.calendarViewMonth = y0.getMonth();
+    renderHeader();
+    renderCalendar();
+    renderBep();
+    renderScreenEfficiency();
+    return;
+  }
+
+  state.selectedDate = yesterday();
+  const y0 = parseDash(state.selectedDate);
+  state.calendarViewYear = y0.getFullYear();
+  state.calendarViewMonth = y0.getMonth();
+
+  try {
+    await collectDailyRange(state.selectedDate);
+  } catch (err){
+    state.offline = true;
+  }
+
+  // 검증: 개봉일 관객수 = 333,899 여부 콘솔 로그
+  const openRec = state.dailyData[CONFIG.OPEN_DATE] && state.dailyData[CONFIG.OPEN_DATE].record;
+  if (openRec){
+    const ok = Number(openRec.audiCnt) === CONFIG.VERIFY_OPEN_DAY_AUDI_CNT;
+    console.log(`[검증] 개봉일(${CONFIG.OPEN_DATE}) 관객수 = ${openRec.audiCnt} (기준값 ${CONFIG.VERIFY_OPEN_DAY_AUDI_CNT}) → ${ok ? '일치' : '불일치'}`);
+  } else {
+    console.warn('[검증] 개봉일 데이터를 불러오지 못했습니다.');
+  }
+
+  renderAll();
+}
+
+/* =========================================================
+   비밀번호 게이트 — 클라이언트 사이드 간이 잠금 (강력한 보안 아님)
+   ========================================================= */
+const DASHBOARD_PASSCODE = "0712";
+
+function unlockDashboard(){
+  document.getElementById('lock-overlay').remove();
+  init();
+}
+
+if (sessionStorage.getItem('hope_unlocked') === '1'){
+  unlockDashboard();
+} else {
+  document.getElementById('lock-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('lock-input');
+    if (input.value === DASHBOARD_PASSCODE){
+      sessionStorage.setItem('hope_unlocked', '1');
+      unlockDashboard();
+    } else {
+      document.getElementById('lock-error').textContent = '비밀번호가 올바르지 않습니다.';
+      input.value = '';
+      input.focus();
+    }
+  });
+}
+</script>
+</body>
+</html>
